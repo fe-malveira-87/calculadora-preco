@@ -36,6 +36,8 @@ export default function Sidebar({ listings, onCalcular, loading }) {
     const sel = listings.find((l) => String(l.id) === e.target.value)
     setListingId(e.target.value)
     setListingName(sel?.name || '')
+    setDiaria(sel?.price ? String(sel.price) : '')
+    setRepasseMinimo('')
   }
 
   const handleSubmit = (e) => {
@@ -81,7 +83,7 @@ export default function Sidebar({ listings, onCalcular, loading }) {
 
         <div>
           <label style={label}>Diária atual (R$)</label>
-          <input type="number" min="0" step="0.01" value={diaria} onChange={(e) => setDiaria(e.target.value)} placeholder="0,00" style={input} required />
+          <input type="number" min="0" step="0.01" value={diaria} onChange={(e) => setDiaria(e.target.value)} placeholder="Auto-preenchida pelo Hostaway" style={input} required />
         </div>
 
         <div>

@@ -8,4 +8,14 @@ router = APIRouter(tags=["listings"])
 
 @router.get("/listings")
 def get_listings(user: ClerkAuthUser = Depends(get_clerk_user)):
-    return HostawayClient().get_listings()
+    raw = HostawayClient().get_listings()
+    return [
+        {
+            "id": l.get("id"),
+            "name": l.get("name", ""),
+            "price": l.get("price", 0),
+            "cleaning_fee": l.get("cleaningFee", 0),
+            "currency": l.get("currency", "BRL"),
+        }
+        for l in raw
+    ]

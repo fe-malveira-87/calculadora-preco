@@ -21,7 +21,7 @@ const label = {
   letterSpacing: '0.04em',
 }
 
-export default function Sidebar({ listings, onCalcular, loading }) {
+export default function Sidebar({ listings, onCalcular, loading, submitLabel = 'Calcular desconto' }) {
   const today = new Date().toISOString().split('T')[0]
   const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
 
@@ -101,7 +101,7 @@ export default function Sidebar({ listings, onCalcular, loading }) {
             fontSize: '1em', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
           }}
         >
-          {loading ? 'Calculando...' : 'Calcular desconto'}
+          {loading ? 'Calculando...' : submitLabel}
         </button>
       </form>
     </aside>

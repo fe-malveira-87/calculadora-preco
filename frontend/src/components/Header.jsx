@@ -9,11 +9,6 @@ const roleBadge = {
   atendente: { bg: 'var(--wecare-gray)', label: 'atendente' },
 }
 
-const navLinks = [
-  { to: '/', label: 'Calculadora' },
-  { to: '/politicas', label: 'Políticas' },
-]
-
 export default function Header() {
   const { user } = useUser()
   const { signOut } = useClerk()
@@ -26,6 +21,12 @@ export default function Header() {
   }, [getToken])
 
   const badge = roleBadge[role] || roleBadge.atendente
+
+  const navLinks = [
+    { to: '/', label: 'Calculadora' },
+    { to: '/politicas', label: 'Políticas' },
+    { to: '/aprovacao', label: 'Aprovações' },
+  ]
 
   return (
     <header style={{

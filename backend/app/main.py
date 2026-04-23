@@ -12,6 +12,8 @@ load_dotenv(_backend_dir / ".env")
 
 from app.auth.clerk_auth import ClerkAuthUser, get_clerk_user
 from app.config import get_settings
+from app.routes.aprovacoes import router as aprovacoes_router
+from app.routes.aprovacao import router as aprovacao_router
 from app.routes.calculadora import router as calculadora_router
 from app.routes.listings import router as listings_router
 from app.routes.rules import router as rules_router
@@ -31,6 +33,8 @@ app.add_middleware(
 app.include_router(listings_router)
 app.include_router(calculadora_router)
 app.include_router(rules_router)
+app.include_router(aprovacoes_router)
+app.include_router(aprovacao_router)
 
 
 @app.get("/health")

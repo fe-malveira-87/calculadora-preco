@@ -82,3 +82,111 @@ export async function getRuleHistory(nome, getToken) {
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export async function criarAprovacao(payload, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacoes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getAprovacoes(getToken) {
+  const res = await fetch(`${API_BASE}/aprovacoes`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getAprovacao(id, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacoes/${id}`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function aprovar(id, observacao, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacoes/${id}/aprovar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify({ observacao }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function rejeitar(id, motivo, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacoes/${id}/rejeitar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify({ motivo }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getAuditoria(getToken) {
+  const res = await fetch(`${API_BASE}/aprovacoes/auditoria`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function solicitarAprovacao(payload, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacao/solicitar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getFilaAprovacao(getToken) {
+  const res = await fetch(`${API_BASE}/aprovacao/fila`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getHistoricoAprovacao(getToken) {
+  const res = await fetch(`${API_BASE}/aprovacao/historico`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getAuditoriaAprovacao(getToken) {
+  const res = await fetch(`${API_BASE}/aprovacao/auditoria`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function aprovarSolicitacao(id, comentario, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacao/${id}/aprovar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify({ comentario }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function rejeitarSolicitacao(id, comentario, getToken) {
+  const res = await fetch(`${API_BASE}/aprovacao/${id}/rejeitar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify({ comentario }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}

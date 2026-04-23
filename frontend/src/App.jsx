@@ -8,6 +8,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import Aprovacao from './pages/Aprovacao.jsx'
 import Aprovacoes from './pages/Aprovacoes.jsx'
 import Calculadora from './pages/Calculadora.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import Politicas from './pages/Politicas.jsx'
 
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/politicas" element={<Politicas />} />
         <Route path="/aprovacoes" element={<Aprovacoes />} />
         <Route path="/aprovacao" element={<Aprovacao />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -190,3 +190,48 @@ export async function rejeitarSolicitacao(id, comentario, getToken) {
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export async function getDashboardResumo(getToken) {
+  const res = await fetch(`${API_BASE}/dashboard/resumo`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getDashboardHistorico(getToken) {
+  const res = await fetch(`${API_BASE}/dashboard/historico`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getScoreImoveis(listingId, getToken) {
+  const res = await fetch(`${API_BASE}/dashboard/score/${listingId}`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+async function _downloadBlob(getToken, url, filename) {
+  const res = await fetch(`${API_BASE}${url}`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  const blob = await res.blob()
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+export function exportExcel(getToken) {
+  return _downloadBlob(getToken, '/dashboard/export/excel', 'aprovacoes.xlsx')
+}
+
+export function exportPdf(getToken) {
+  return _downloadBlob(getToken, '/dashboard/export/pdf', 'aprovacoes.pdf')
+}

@@ -26,6 +26,7 @@ export default function Header() {
     { to: '/', label: 'Calculadora' },
     { to: '/politicas', label: 'Políticas' },
     { to: '/aprovacao', label: 'Aprovações' },
+    { to: '/dashboard', label: 'Dashboard' },
   ]
 
   return (

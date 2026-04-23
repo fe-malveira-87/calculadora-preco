@@ -220,7 +220,7 @@ export default function Aprovacao() {
                         {s.nome_imovel}
                       </p>
                       <p style={{ fontSize: '0.82em', color: 'var(--wecare-gray)', marginBottom: '0.3rem' }}>
-                        {s.solicitante?.nome || s.solicitante?.email}
+                        Solicitado por: {s.solicitante?.nome || s.solicitante?.email}
                       </p>
                       <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85em' }}>
                         <span style={{ color: 'var(--wecare-teal)', fontWeight: 600 }}>
@@ -229,7 +229,7 @@ export default function Aprovacao() {
                         <span>{fmt(s.resultado?.preco_sugerido)}</span>
                       </div>
                       <p style={{ fontSize: '0.78em', color: 'var(--wecare-gray)', marginTop: '0.3rem' }}>
-                        {fmtDate(s.criado_em)}
+                        Em: {fmtDate(s.criado_em)}
                       </p>
                     </div>
                   ))}

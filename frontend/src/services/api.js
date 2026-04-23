@@ -75,6 +75,34 @@ export async function updateRule(nome, conteudo, getToken) {
   return res.json()
 }
 
+export async function criarRule(nome, conteudo, getToken) {
+  const res = await fetch(`${API_BASE}/rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify({ nome, conteudo }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function arquivarRule(nome, getToken) {
+  const res = await fetch(`${API_BASE}/rules/${nome}/arquivar`, {
+    method: 'PATCH',
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function desarquivarRule(nome, getToken) {
+  const res = await fetch(`${API_BASE}/rules/${nome}/desarquivar`, {
+    method: 'PATCH',
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
 export async function getRuleHistory(nome, getToken) {
   const res = await fetch(`${API_BASE}/rules/${nome}/history`, {
     headers: await authHeaders(getToken),

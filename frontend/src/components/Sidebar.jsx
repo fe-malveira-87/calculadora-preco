@@ -30,19 +30,19 @@ export default function Sidebar({ listings, onCalcular, loading, submitLabel = '
   const [dataInicio, setDataInicio] = useState(today)
   const [dataFim, setDataFim] = useState(nextMonth)
   const [diaria, setDiaria] = useState('')
-  const [repasseMinimo, setRepasseMinimo] = useState('')
+  const [repasseMinimo, setRepasseMinimo] = useState('0')
 
   const handleListing = (e) => {
     const sel = listings.find((l) => String(l.id) === e.target.value)
     setListingId(e.target.value)
     setListingName(sel?.name || '')
     setDiaria(sel?.price ? String(sel.price) : '')
-    setRepasseMinimo('')
+    setRepasseMinimo('0')
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!listingId || !diaria || !repasseMinimo) return
+    if (!listingId || !diaria) return
     onCalcular({
       listing_id: listingId,
       nome: listingName,
@@ -88,7 +88,7 @@ export default function Sidebar({ listings, onCalcular, loading, submitLabel = '
 
         <div>
           <label style={label}>Repasse mínimo (R$)</label>
-          <input type="number" min="0" step="0.01" value={repasseMinimo} onChange={(e) => setRepasseMinimo(e.target.value)} placeholder="0,00" style={input} required />
+          <input type="number" min="0" step="0.01" value={repasseMinimo} onChange={(e) => setRepasseMinimo(e.target.value)} placeholder="0,00" style={input} />
         </div>
 
         <button

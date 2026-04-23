@@ -1,7 +1,16 @@
 import { useAuth } from '@clerk/clerk-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
-import { getMe, getRule, getRuleHistory, getRules, updateRule } from '../services/api'
+import {
+  arquivarRule,
+  criarRule,
+  desarquivarRule,
+  getMe,
+  getRule,
+  getRuleHistory,
+  getRules,
+  updateRule,
+} from '../services/api'
 
 const label = {
   display: 'block',
@@ -33,6 +42,12 @@ export default function Politicas() {
   const [erro, setErro] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
 
+  // nova política
+  const [showNovaForm, setShowNovaForm] = useState(false)
+  const [novoNome, setNovoNome] = useState('')
+  const [novoConteudo, setNovoConteudo] = useState('')
+  const [savingNova, setSavingNova] = useState(false)
+
   const canEdit = role === 'admin' || role === 'aprovador'
   const isDirty = content !== savedContent
 
@@ -54,6 +69,7 @@ export default function Politicas() {
   }, [getToken, fetchList])
 
   async function handleSelectRule(rule) {
+    if (rule.arquivada) return
     setSelected(rule)
     setErro(null)
     setSuccessMsg(null)
@@ -104,6 +120,51 @@ export default function Politicas() {
     }
   }
 
+  async function handleCriar(e) {
+    e.preventDefault()
+    if (!novoNome.trim() || !novoConteudo.trim()) return
+    setSavingNova(true)
+    setErro(null)
+    try {
+      await criarRule(novoNome.trim(), novoConteudo.trim(), getToken)
+      setNovoNome('')
+      setNovoConteudo('')
+      setShowNovaForm(false)
+      setSuccessMsg('Política criada com sucesso!')
+      setTimeout(() => setSuccessMsg(null), 3000)
+      fetchList()
+    } catch (e) {
+      setErro('Erro ao criar: ' + e.message)
+    } finally {
+      setSavingNova(false)
+    }
+  }
+
+  async function handleArquivar(nome) {
+    setErro(null)
+    try {
+      await arquivarRule(nome, getToken)
+      if (selected?.nome === nome) { setSelected(null); setContent(''); setSavedContent('') }
+      setSuccessMsg('Política arquivada.')
+      setTimeout(() => setSuccessMsg(null), 3000)
+      fetchList()
+    } catch (e) {
+      setErro('Erro ao arquivar: ' + e.message)
+    }
+  }
+
+  async function handleDesarquivar(nome) {
+    setErro(null)
+    try {
+      await desarquivarRule(nome, getToken)
+      setSuccessMsg('Política desarquivada.')
+      setTimeout(() => setSuccessMsg(null), 3000)
+      fetchList()
+    } catch (e) {
+      setErro('Erro ao desarquivar: ' + e.message)
+    }
+  }
+
   const previewHtml = useMemo(() => {
     if (!content) return ''
     if (typeof window !== 'undefined' && window.marked) return window.marked.parse(content)
@@ -122,9 +183,84 @@ export default function Politicas() {
           display: 'flex', flexDirection: 'column', gap: '0.75rem',
           height: 'calc(100vh - 64px)', overflowY: 'auto',
         }}>
-          <p style={{ fontWeight: 600, fontSize: '1em', color: 'var(--wecare-dark)', marginBottom: '0.5rem' }}>
-            Políticas de Desconto
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <p style={{ fontWeight: 600, fontSize: '1em', color: 'var(--wecare-dark)' }}>
+              Políticas de Desconto
+            </p>
+            {canEdit && (
+              <button
+                onClick={() => { setShowNovaForm((v) => !v); setErro(null) }}
+                style={{
+                  background: showNovaForm ? 'var(--wecare-gray)' : 'var(--wecare-red)',
+                  color: '#fff', border: 'none', borderRadius: 'var(--radius)',
+                  padding: '0.25rem 0.75rem', fontSize: '0.78em', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'var(--font-main)',
+                }}
+              >
+                {showNovaForm ? 'Cancelar' : '+ Nova'}
+              </button>
+            )}
+          </div>
+
+          {/* Form nova política */}
+          {showNovaForm && canEdit && (
+            <form
+              onSubmit={handleCriar}
+              style={{
+                background: '#f9f9f9', borderRadius: 'var(--radius)',
+                border: '1px solid #e5e7eb', padding: '0.9rem',
+                display: 'flex', flexDirection: 'column', gap: '0.6rem',
+              }}
+            >
+              <div>
+                <label style={label}>Nome (slug)</label>
+                <input
+                  type="text"
+                  value={novoNome}
+                  onChange={(e) => setNovoNome(e.target.value)}
+                  placeholder="ex: desconto-longa-estadia"
+                  pattern="[a-zA-Z0-9\-]+"
+                  title="Apenas letras, números e hífens"
+                  required
+                  style={{
+                    width: '100%', padding: '0.4rem 0.6rem',
+                    border: '1px solid #ddd', borderRadius: 'var(--radius)',
+                    fontSize: '0.85em', fontFamily: 'var(--font-main)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={label}>Conteúdo (Markdown)</label>
+                <textarea
+                  value={novoConteudo}
+                  onChange={(e) => setNovoConteudo(e.target.value)}
+                  rows={5}
+                  placeholder="# Título da política&#10;&#10;Descreva as regras..."
+                  required
+                  style={{
+                    width: '100%', padding: '0.4rem 0.6rem',
+                    border: '1px solid #ddd', borderRadius: 'var(--radius)',
+                    fontSize: '0.82em', fontFamily: 'monospace',
+                    resize: 'vertical', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingNova}
+                style={{
+                  background: savingNova ? 'var(--wecare-gray)' : 'var(--wecare-teal)',
+                  color: '#fff', border: 'none', borderRadius: 'var(--radius)',
+                  padding: '0.4rem', fontSize: '0.85em', fontWeight: 600,
+                  cursor: savingNova ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-main)',
+                }}
+              >
+                {savingNova ? 'Criando...' : 'Criar política'}
+              </button>
+            </form>
+          )}
 
           {loadingList && <p style={{ color: 'var(--wecare-gray)', fontSize: '0.88em' }}>Carregando...</p>}
 
@@ -133,22 +269,61 @@ export default function Politicas() {
             return (
               <div
                 key={rule.nome}
-                onClick={() => handleSelectRule(rule)}
                 style={{
                   padding: '0.9rem 1rem',
                   borderRadius: 'var(--radius)',
                   border: `2px solid ${active ? 'var(--wecare-red)' : '#eee'}`,
                   background: active ? '#fff5f5' : '#fff',
-                  cursor: 'pointer',
+                  cursor: rule.arquivada ? 'default' : 'pointer',
                   transition: 'all 0.15s',
+                  opacity: rule.arquivada ? 0.55 : 1,
                 }}
+                onClick={() => !rule.arquivada && handleSelectRule(rule)}
               >
-                <p style={{ fontWeight: 600, fontSize: '0.92em', color: 'var(--wecare-dark)', marginBottom: '0.25rem' }}>
-                  {rule.titulo}
-                </p>
-                <p style={{ fontSize: '0.74em', color: 'var(--wecare-gray)' }}>
-                  {fmtDate(rule.modificado)}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.4rem' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.92em', color: 'var(--wecare-dark)', margin: 0 }}>
+                        {rule.titulo}
+                      </p>
+                      {rule.arquivada && (
+                        <span style={{
+                          background: '#e5e7eb', color: '#6b7280',
+                          borderRadius: 8, padding: '1px 7px',
+                          fontSize: '0.68em', fontWeight: 700,
+                        }}>
+                          Arquivada
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.74em', color: 'var(--wecare-gray)', margin: 0 }}>
+                      {fmtDate(rule.modificado)}
+                    </p>
+                  </div>
+
+                  {canEdit && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        rule.arquivada ? handleDesarquivar(rule.nome) : handleArquivar(rule.nome)
+                      }}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #d1d5db',
+                        borderRadius: 'var(--radius)',
+                        padding: '2px 8px',
+                        fontSize: '0.72em',
+                        cursor: 'pointer',
+                        color: 'var(--wecare-gray)',
+                        fontFamily: 'var(--font-main)',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {rule.arquivada ? 'Restaurar' : 'Arquivar'}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}

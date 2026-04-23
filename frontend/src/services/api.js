@@ -48,3 +48,37 @@ export async function getMe(getToken) {
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export async function getRules(getToken) {
+  const res = await fetch(`${API_BASE}/rules`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getRule(nome, getToken) {
+  const res = await fetch(`${API_BASE}/rules/${nome}`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function updateRule(nome, conteudo, getToken) {
+  const res = await fetch(`${API_BASE}/rules/${nome}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify({ conteudo }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function getRuleHistory(nome, getToken) {
+  const res = await fetch(`${API_BASE}/rules/${nome}/history`, {
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}

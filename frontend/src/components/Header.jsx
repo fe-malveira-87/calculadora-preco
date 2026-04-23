@@ -1,7 +1,7 @@
-import { useClerk, useUser } from '@clerk/clerk-react'
+import { useAuth, useClerk, useUser } from '@clerk/clerk-react'
 import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { getMe } from '../services/api'
-import { useAuth } from '@clerk/clerk-react'
 
 const roleBadge = {
   admin: { bg: 'var(--wecare-red)', label: 'admin' },
@@ -9,10 +9,16 @@ const roleBadge = {
   atendente: { bg: 'var(--wecare-gray)', label: 'atendente' },
 }
 
+const navLinks = [
+  { to: '/', label: 'Calculadora' },
+  { to: '/politicas', label: 'Políticas' },
+]
+
 export default function Header() {
   const { user } = useUser()
   const { signOut } = useClerk()
   const { getToken } = useAuth()
+  const { pathname } = useLocation()
   const [role, setRole] = useState(null)
 
   useEffect(() => {
@@ -34,13 +40,39 @@ export default function Header() {
       top: 0,
       zIndex: 100,
     }}>
-      <img
-        src="/logo.png"
-        alt="WeCare"
-        style={{ height: 36 }}
-        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block' }}
-      />
-      <span style={{ display: 'none', fontWeight: 700, color: 'var(--wecare-red)', fontSize: '1.2em' }}>WeCare</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <img
+          src="/logo.png"
+          alt="WeCare"
+          style={{ height: 36 }}
+          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block' }}
+        />
+        <span style={{ display: 'none', fontWeight: 700, color: 'var(--wecare-red)', fontSize: '1.2em' }}>WeCare</span>
+
+        <nav style={{ display: 'flex', gap: '0.25rem' }}>
+          {navLinks.map(({ to, label }) => {
+            const active = pathname === to
+            return (
+              <Link
+                key={to}
+                to={to}
+                style={{
+                  padding: '0.35rem 0.9rem',
+                  borderRadius: 'var(--radius)',
+                  fontWeight: active ? 600 : 400,
+                  fontSize: '0.9em',
+                  color: active ? 'var(--wecare-red)' : 'var(--wecare-gray)',
+                  background: active ? '#fff5f5' : 'transparent',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
 
       {user && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>

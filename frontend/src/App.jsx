@@ -7,6 +7,7 @@ import {
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import Calculadora from './pages/Calculadora.jsx'
 import Login from './pages/Login.jsx'
+import Politicas from './pages/Politicas.jsx'
 
 function AuthLoading() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
       <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
       <Route element={<RequireAuth />}>
         <Route index element={<Calculadora />} />
+        <Route path="/politicas" element={<Politicas />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

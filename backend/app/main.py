@@ -14,6 +14,7 @@ from app.auth.clerk_auth import ClerkAuthUser, get_clerk_user
 from app.config import get_settings
 from app.routes.calculadora import router as calculadora_router
 from app.routes.listings import router as listings_router
+from app.routes.rules import router as rules_router
 
 app = FastAPI(title="WeCare Calculadora de Descontos", version="1.0.0")
 
@@ -29,6 +30,7 @@ app.add_middleware(
 
 app.include_router(listings_router)
 app.include_router(calculadora_router)
+app.include_router(rules_router)
 
 
 @app.get("/health")

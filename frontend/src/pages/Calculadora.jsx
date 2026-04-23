@@ -7,6 +7,52 @@ import { useCalculadora } from '../hooks/useCalculadora'
 import { getMe, solicitarAprovacao } from '../services/api'
 
 const fmt = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+const fmtDate = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR') : '-')
+
+const CATEGORIA_META = {
+  repasse:         { icon: '🏠', cor: 'var(--wecare-teal)',   bg: '#f0fdfa' },
+  demanda:         { icon: '📊', cor: 'var(--wecare-orange)', bg: '#fff7ed' },
+  disponibilidade: { icon: '📅', cor: '#3b82f6',              bg: '#eff6ff' },
+  combinada:       { icon: '🔗', cor: '#8b5cf6',              bg: '#f5f3ff' },
+}
+const META_DEFAULT = { icon: '📌', cor: 'var(--wecare-gray)', bg: '#f3f4f6' }
+
+function parseRegra(texto) {
+  const match = texto.match(/^\[([^\]]+)\]\s*(.+)$/)
+  if (!match) return { categoria: 'geral', descricao: texto }
+  return { categoria: match[1].toLowerCase().trim(), descricao: match[2].trim() }
+}
+
+function SectionTitle({ children }) {
+  return (
+    <p style={{
+      fontWeight: 600, fontSize: '0.85em',
+      color: 'var(--wecare-gray)', textTransform: 'uppercase',
+      letterSpacing: '0.06em', marginBottom: '0.75rem',
+    }}>
+      {children}
+    </p>
+  )
+}
+
+function SmallCard({ title, value, color }) {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 'var(--radius)',
+      boxShadow: 'var(--shadow)', padding: '0.9rem 1.1rem',
+    }}>
+      <p style={{
+        fontSize: '0.72em', fontWeight: 600, color: 'var(--wecare-gray)',
+        textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.3rem',
+      }}>
+        {title}
+      </p>
+      <p style={{ fontSize: '1.15em', fontWeight: 700, color: color || 'var(--wecare-dark)' }}>
+        {value}
+      </p>
+    </div>
+  )
+}
 
 export default function Calculadora() {
   const { getToken } = useAuth()
@@ -56,7 +102,6 @@ export default function Calculadora() {
         />
         <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
 
-          {/* Erro de cálculo (admin/aprovador) */}
           {erro && !isAtendente && (
             <div style={{
               background: '#fff3cd', border: '1px solid var(--wecare-yellow)',
@@ -67,7 +112,6 @@ export default function Calculadora() {
             </div>
           )}
 
-          {/* Erro de solicitação (atendente) */}
           {erroSolicitar && (
             <div style={{
               background: '#fff3cd', border: '1px solid var(--wecare-yellow)',
@@ -78,7 +122,6 @@ export default function Calculadora() {
             </div>
           )}
 
-          {/* Confirmação de solicitação enviada (atendente) */}
           {isAtendente && solicitacaoId && (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -100,7 +143,6 @@ export default function Calculadora() {
             </div>
           )}
 
-          {/* Empty state atendente */}
           {isAtendente && !solicitacaoId && !enviando && !erroSolicitar && (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -114,7 +156,6 @@ export default function Calculadora() {
             </div>
           )}
 
-          {/* Resultado admin/aprovador */}
           {!isAtendente && !resultado && (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -126,7 +167,9 @@ export default function Calculadora() {
           )}
 
           {!isAtendente && resultado && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+
+              {/* 1. Cards principais */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <MetricCard title="Diária atual" value={fmt(resultado.diaria_atual)} />
                 <MetricCard title="Desconto sugerido" value={`${resultado.desconto_percentual ?? 0}%`} highlight />
@@ -134,34 +177,150 @@ export default function Calculadora() {
                 <MetricCard title="Repasse resultante" value={fmt(resultado.repasse_resultante)} />
               </div>
 
+              {/* Alertas */}
               {resultado.alertas?.length > 0 && (
                 <div style={{
                   background: '#fff3cd', border: '1px solid var(--wecare-yellow)',
                   borderRadius: 'var(--radius)', padding: '1rem 1.2rem',
                 }}>
                   {resultado.alertas.map((a, i) => (
-                    <p key={i} style={{ color: '#856404', fontSize: '0.9em', marginBottom: i < resultado.alertas.length - 1 ? '0.3rem' : 0 }}>
+                    <p key={i} style={{
+                      color: '#856404', fontSize: '0.9em',
+                      marginBottom: i < resultado.alertas.length - 1 ? '0.3rem' : 0,
+                    }}>
                       ⚠ {a}
                     </p>
                   ))}
                 </div>
               )}
 
-              {resultado.regras_aplicadas?.length > 0 && (
-                <details style={{
-                  background: '#fff', borderRadius: 'var(--radius)',
-                  boxShadow: 'var(--shadow)', padding: '1rem 1.2rem',
-                }}>
-                  <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--wecare-dark)' }}>
-                    Regras aplicadas
-                  </summary>
-                  <ul style={{ marginTop: '0.8rem', paddingLeft: '1.2rem' }}>
-                    {resultado.regras_aplicadas.map((r, i) => (
-                      <li key={i} style={{ fontSize: '0.9em', color: 'var(--wecare-gray)', marginBottom: '0.3rem' }}>{r}</li>
-                    ))}
-                  </ul>
-                </details>
+              {/* 2. Ocupação do período */}
+              {resultado.periodo && (
+                <section>
+                  <SectionTitle>Ocupação do período</SectionTitle>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                    <SmallCard title="Total de dias" value={resultado.periodo.total_dias} />
+                    <SmallCard
+                      title="Dias livres"
+                      value={resultado.periodo.dias_livres}
+                      color="var(--wecare-teal)"
+                    />
+                    <SmallCard
+                      title="Dias ocupados"
+                      value={resultado.periodo.dias_ocupados}
+                      color="var(--wecare-red)"
+                    />
+                    <SmallCard
+                      title="Taxa de ocupação"
+                      value={`${resultado.periodo.taxa_ocupacao}%`}
+                      color={
+                        resultado.periodo.taxa_ocupacao >= 70 ? 'var(--wecare-teal)' :
+                        resultado.periodo.taxa_ocupacao >= 40 ? 'var(--wecare-orange)' :
+                        'var(--wecare-red)'
+                      }
+                    />
+                  </div>
+                </section>
               )}
+
+              {/* 3. Custos operacionais */}
+              {resultado.custos && (
+                <section>
+                  <SectionTitle>Custos operacionais</SectionTitle>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                    <SmallCard title="Taxa de limpeza" value={fmt(resultado.custos.taxa_limpeza)} />
+                    <SmallCard title="Comissão canal %" value={`${resultado.custos.comissao_canal_percent}%`} />
+                    <SmallCard title="Comissão canal R$" value={fmt(resultado.custos.comissao_canal_valor)} />
+                  </div>
+                </section>
+              )}
+
+              {/* 4. Reservas no período */}
+              {resultado.reservas != null && (
+                <section>
+                  <SectionTitle>Reservas no período</SectionTitle>
+                  {resultado.reservas.length === 0 ? (
+                    <p style={{ color: 'var(--wecare-gray)', fontSize: '0.9em' }}>
+                      Nenhuma reserva no período
+                    </p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{
+                        width: '100%', borderCollapse: 'collapse',
+                        background: '#fff', borderRadius: 'var(--radius)',
+                        boxShadow: 'var(--shadow)', fontSize: '0.85em',
+                      }}>
+                        <thead>
+                          <tr style={{ background: 'var(--wecare-light)' }}>
+                            {['Canal', 'Check-in', 'Check-out', 'Noites', 'Total', 'Limpeza', 'Taxa canal', 'Repasse host', 'Diária média'].map((h) => (
+                              <th key={h} style={{
+                                padding: '0.6rem 0.9rem', textAlign: 'left',
+                                fontSize: '0.75em', fontWeight: 600,
+                                color: 'var(--wecare-gray)', textTransform: 'uppercase',
+                                letterSpacing: '0.04em', whiteSpace: 'nowrap',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {resultado.reservas.map((r, i) => (
+                            <tr
+                              key={i}
+                              style={{ borderBottom: i < resultado.reservas.length - 1 ? '1px solid #f3f4f6' : 'none' }}
+                            >
+                              <td style={{ padding: '0.6rem 0.9rem', fontWeight: 600, color: 'var(--wecare-dark)' }}>{r.canal || '-'}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-gray)', whiteSpace: 'nowrap' }}>{fmtDate(r.check_in)}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-gray)', whiteSpace: 'nowrap' }}>{fmtDate(r.check_out)}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-dark)' }}>{r.noites}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-dark)' }}>{fmt(r.total)}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-gray)' }}>{fmt(r.taxa_limpeza)}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-gray)' }}>{fmt(r.taxa_canal)}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', fontWeight: 600, color: 'var(--wecare-teal)' }}>{fmt(r.repasse_host)}</td>
+                              <td style={{ padding: '0.6rem 0.9rem', color: 'var(--wecare-dark)' }}>{fmt(r.diaria_media)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* 5. Regras aplicadas */}
+              {resultado.regras_aplicadas?.length > 0 && (
+                <section>
+                  <SectionTitle>Regras aplicadas ({resultado.regras_aplicadas.length})</SectionTitle>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {resultado.regras_aplicadas.map((r, i) => {
+                      const { categoria, descricao } = parseRegra(r)
+                      const meta = CATEGORIA_META[categoria] || META_DEFAULT
+                      return (
+                        <div key={i} style={{
+                          background: '#fff', borderRadius: 'var(--radius)',
+                          boxShadow: 'var(--shadow)', padding: '0.65rem 1rem',
+                          display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        }}>
+                          <span style={{
+                            background: meta.bg, color: meta.cor,
+                            borderRadius: 8, padding: '2px 10px',
+                            fontSize: '0.75em', fontWeight: 700,
+                            whiteSpace: 'nowrap', flexShrink: 0,
+                          }}>
+                            {meta.icon} {categoria}
+                          </span>
+                          <span style={{ fontSize: '0.88em', color: 'var(--wecare-dark)' }}>
+                            {descricao}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )}
+
             </div>
           )}
 

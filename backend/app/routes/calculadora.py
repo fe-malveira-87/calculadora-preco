@@ -95,6 +95,8 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
         try:
             hostaway = HostawayClient()
             revenue = hostaway.get_owner_revenue(listing_id_int, body.data_inicio, body.data_fim)
+            inicio = body.data_inicio.isoformat()
+            fim = body.data_fim.isoformat()
             reservas = sorted(
                 [
                     {
@@ -109,6 +111,7 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
                         "diaria_media": r["diaria_media"],
                     }
                     for r in revenue
+                    if r.get("check_in") and inicio <= r["check_in"] <= fim
                 ],
                 key=lambda r: r["check_in"] or "",
             )

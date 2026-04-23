@@ -1,0 +1,32 @@
+:root {
+  --wecare-red: #E55A4F;
+  --wecare-orange: #E67E22;
+  --wecare-dark: #333333;
+  --wecare-gray: #777777;
+  --wecare-light: #F8F9FA;
+  --wecare-teal: #16A085;
+  --wecare-yellow: #F39C12;
+
+  --font-main: 'Poppins', sans-serif;
+
+  --radius: 8px;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  font-size: 1.1em;
+  color: var(--wecare-dark);
+  background: var(--wecare-light);
+}
+
+h1 { font-size: 2.8em; font-weight: 700; color: var(--wecare-red); }
+h2 { font-size: 2.2em; font-weight: 600; color: var(--wecare-red); }
+h3 { font-size: 1.8em; font-weight: 600; color: var(--wecare-orange); }

@@ -1,5 +1,28 @@
-.env
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
-*.pdf
+*.egg-info/
+dist/
+build/
+
+# UV
+.python-version
+
+# Env
+.env
+*.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Backend
+backend/.env
+backend/__pycache__/
+
+# IDE
+.vscode/
+.idea/
+*.swp

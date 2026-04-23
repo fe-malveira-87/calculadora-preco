@@ -9,9 +9,14 @@ Uso:
 import os
 import sys
 from datetime import date, timedelta
-from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+_BACKEND = Path(__file__).resolve().parent.parent
+if str(_BACKEND) not in sys.path:
+    sys.path.insert(0, str(_BACKEND))
+
+from dotenv import load_dotenv
+load_dotenv(_BACKEND / ".env")
 
 VERDE = "\033[92m"
 AMARELO = "\033[93m"

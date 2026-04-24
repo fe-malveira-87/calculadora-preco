@@ -41,6 +41,7 @@ class ResultadoDesconto:
     repasse_resultante: float         # repasse após desconto
     regras_aplicadas: list[str] = field(default_factory=list)
     alertas: list[str] = field(default_factory=list)
+    regra_determinante: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -211,8 +212,18 @@ class CalculadoraDesconto:
         regras_aplicadas.append(f"[disponibilidade] {desc_disp}")
 
         # desconto final = menor entre todas as regras (mais conservador)
+        candidatos_nomeados = [
+            (pct_repasse, "repasse"),
+            (pct_combinada, "combinada"),
+            (pct_demanda, "demanda"),
+            (pct_disp, "disponibilidade"),
+        ]
         candidatos = [pct_repasse, pct_combinada, pct_demanda, pct_disp]
         desconto_final = min(c for c in candidatos if c != float("inf"))
+        regra_vencedora = min(
+            (c for c in candidatos_nomeados if c[0] != float("inf")),
+            key=lambda c: c[0],
+        )[1]
         desconto_final = max(0.0, min(desconto_final, 50.0))  # teto de 50%
 
         preco_sugerido = round(dados.diaria_atual * (1 - desconto_final / 100), 2)
@@ -236,4 +247,5 @@ class CalculadoraDesconto:
             repasse_resultante=repasse_resultante,
             regras_aplicadas=regras_aplicadas,
             alertas=alertas,
+            regra_determinante=regra_vencedora,
         )

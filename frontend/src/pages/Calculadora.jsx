@@ -297,6 +297,7 @@ export default function Calculadora() {
                     {resultado.regras_aplicadas.map((r, i) => {
                       const { categoria, descricao } = parseRegra(r)
                       const meta = CATEGORIA_META[categoria] || META_DEFAULT
+                      const isDeterminante = categoria === resultado.regra_determinante
                       return (
                         <div key={i} style={{
                           background: '#fff', borderRadius: 'var(--radius)',
@@ -311,6 +312,16 @@ export default function Calculadora() {
                           }}>
                             {meta.icon} {categoria}
                           </span>
+                          {isDeterminante && (
+                            <span style={{
+                              background: 'var(--wecare-red)', color: '#fff',
+                              borderRadius: 8, padding: '2px 10px',
+                              fontSize: '0.75em', fontWeight: 700,
+                              whiteSpace: 'nowrap', flexShrink: 0,
+                            }}>
+                              ✓ determinou o desconto
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.88em', color: 'var(--wecare-dark)' }}>
                             {descricao}
                           </span>

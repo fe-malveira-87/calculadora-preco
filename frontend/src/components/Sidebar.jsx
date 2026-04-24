@@ -59,13 +59,15 @@ export default function Sidebar({ listings, onCalcular, loading, submitLabel = '
       boxShadow: 'var(--shadow)', padding: '1.5rem',
       display: 'flex', flexDirection: 'column', gap: '1.2rem',
       height: 'calc(100vh - 64px)', overflowY: 'auto',
+      opacity: loading ? 0.6 : 1,
+      transition: 'opacity 0.2s',
     }}>
       <p style={{ fontWeight: 600, fontSize: '1em', color: 'var(--wecare-dark)' }}>Parâmetros</p>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div>
           <label style={label}>Imóvel</label>
-          <select value={listingId} onChange={handleListing} style={input} required>
+          <select value={listingId} onChange={handleListing} disabled={loading} style={input} required>
             <option value="">Selecione...</option>
             {listings.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
@@ -73,22 +75,22 @@ export default function Sidebar({ listings, onCalcular, loading, submitLabel = '
 
         <div>
           <label style={label}>Data início</label>
-          <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} style={input} required />
+          <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} disabled={loading} style={input} required />
         </div>
 
         <div>
           <label style={label}>Data fim</label>
-          <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} style={input} required />
+          <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} disabled={loading} style={input} required />
         </div>
 
         <div>
           <label style={label}>Diária atual (R$)</label>
-          <input type="number" min="0" step="0.01" value={diaria} onChange={(e) => setDiaria(e.target.value)} placeholder="Auto-preenchida pelo Hostaway" style={input} required />
+          <input type="number" min="0" step="0.01" value={diaria} onChange={(e) => setDiaria(e.target.value)} disabled={loading} placeholder="Auto-preenchida pelo Hostaway" style={input} required />
         </div>
 
         <div>
           <label style={label}>Repasse mínimo (R$)</label>
-          <input type="number" min="0" step="0.01" value={repasseMinimo} onChange={(e) => setRepasseMinimo(e.target.value)} placeholder="0,00" style={input} />
+          <input type="number" min="0" step="0.01" value={repasseMinimo} onChange={(e) => setRepasseMinimo(e.target.value)} disabled={loading} placeholder="0,00" style={input} />
         </div>
 
         <button

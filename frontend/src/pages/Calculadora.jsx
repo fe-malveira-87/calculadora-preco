@@ -23,6 +23,31 @@ function parseRegra(texto) {
   return { categoria: match[1].toLowerCase().trim(), descricao: match[2].trim() }
 }
 
+const PULSE_STYLE = `
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+`
+
+const MENSAGENS_LOADING = [
+  'Consultando disponibilidade no Hostaway...',
+  'Buscando reservas do período...',
+  'Analisando dados do PriceLabs...',
+  'Calculando desconto ideal...',
+]
+
+function SkeletonBlock({ height = 80 }) {
+  return (
+    <div style={{
+      background: '#e5e7eb',
+      borderRadius: 'var(--radius)',
+      height,
+      animation: 'pulse 1.5s ease-in-out infinite',
+    }} />
+  )
+}
+
 function SectionTitle({ children }) {
   return (
     <p style={{
@@ -66,6 +91,13 @@ export default function Calculadora() {
   const [iaAnalise, setIaAnalise] = useState(null)
   const [iaLoading, setIaLoading] = useState(false)
   const [iaErro, setIaErro] = useState(null)
+  const [msgIdx, setMsgIdx] = useState(0)
+
+  useEffect(() => {
+    if (!loadingCalculo) { setMsgIdx(0); return }
+    const id = setInterval(() => setMsgIdx((i) => (i + 1) % MENSAGENS_LOADING.length), 2000)
+    return () => clearInterval(id)
+  }, [loadingCalculo])
 
   useEffect(() => {
     fetchListings()
@@ -196,7 +228,41 @@ export default function Calculadora() {
             </div>
           )}
 
-          {!isAtendente && !resultado && (
+          {!isAtendente && loadingCalculo && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+              <style>{PULSE_STYLE}</style>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <SkeletonBlock height={90} />
+                <SkeletonBlock height={90} />
+                <SkeletonBlock height={90} />
+                <SkeletonBlock height={90} />
+              </div>
+              <p style={{
+                fontWeight: 600, fontSize: '0.85em',
+                color: 'var(--wecare-gray)', textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}>
+                Carregando dados do imóvel...
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                <SkeletonBlock height={70} />
+                <SkeletonBlock height={70} />
+                <SkeletonBlock height={70} />
+                <SkeletonBlock height={70} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                <SkeletonBlock height={70} />
+                <SkeletonBlock height={70} />
+                <SkeletonBlock height={70} />
+              </div>
+              <SkeletonBlock height={140} />
+              <p style={{ textAlign: 'center', color: 'var(--wecare-gray)', fontSize: '0.88em' }}>
+                {MENSAGENS_LOADING[msgIdx]}
+              </p>
+            </div>
+          )}
+
+          {!isAtendente && !resultado && !loadingCalculo && (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', height: '60vh',

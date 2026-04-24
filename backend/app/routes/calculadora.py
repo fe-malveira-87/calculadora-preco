@@ -45,12 +45,38 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
 
     noites_livres_real = body.dias_disponiveis
     _calendar_cache = None
+    _reservas_cache = None
     if listing_id_int:
         try:
             _calendar_cache = HostawayClient().get_calendar(listing_id_int, body.data_inicio, body.data_fim)
-            noites_livres_real = sum(1 for d in _calendar_cache if d.get("isAvailable") == 1)
         except Exception:
             _calendar_cache = None
+        if _calendar_cache is not None:
+            try:
+                _inicio = body.data_inicio.isoformat()
+                _fim = body.data_fim.isoformat()
+                _revenue = HostawayClient().get_owner_revenue(listing_id_int, body.data_inicio, body.data_fim)
+                _reservas_cache = sorted(
+                    [
+                        {
+                            "canal": r["canal"],
+                            "check_in": r["check_in"],
+                            "check_out": r["check_out"],
+                            "noites": r["noites"],
+                            "total": r["total"],
+                            "taxa_limpeza": r["limpeza"],
+                            "taxa_canal": r["taxa_canal"],
+                            "repasse_host": r["repasse_host"],
+                            "diaria_media": r["diaria_media"],
+                        }
+                        for r in _revenue
+                        if r.get("check_in") and _inicio <= r["check_in"] <= _fim
+                    ],
+                    key=lambda r: r["check_in"] or "",
+                )
+                noites_livres_real = max(0, len(_calendar_cache) - sum(r["noites"] for r in _reservas_cache))
+            except Exception:
+                pass
 
     dados = DadosImovel(
         listing_id=body.listing_id,
@@ -79,33 +105,7 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
         except Exception:
             pass
 
-    reservas = None
-    if listing_id_int:
-        try:
-            hostaway = HostawayClient()
-            revenue = hostaway.get_owner_revenue(listing_id_int, body.data_inicio, body.data_fim)
-            inicio = body.data_inicio.isoformat()
-            fim = body.data_fim.isoformat()
-            reservas = sorted(
-                [
-                    {
-                        "canal": r["canal"],
-                        "check_in": r["check_in"],
-                        "check_out": r["check_out"],
-                        "noites": r["noites"],
-                        "total": r["total"],
-                        "taxa_limpeza": r["limpeza"],
-                        "taxa_canal": r["taxa_canal"],
-                        "repasse_host": r["repasse_host"],
-                        "diaria_media": r["diaria_media"],
-                    }
-                    for r in revenue
-                    if r.get("check_in") and inicio <= r["check_in"] <= fim
-                ],
-                key=lambda r: r["check_in"] or "",
-            )
-        except Exception:
-            pass
+    reservas = _reservas_cache
 
     periodo = None
     if listing_id_int:

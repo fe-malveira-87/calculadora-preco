@@ -197,8 +197,8 @@ def _desconto_disponibilidade(dias: int) -> tuple[float, str]:
         ]
         for limite, pct in tabela:
             if dias <= limite:
-                return pct, f"disponibilidade: {dias} dias livres → {pct}% máx"
-        return 20.0, f"disponibilidade: {dias} dias livres → 20% máx"
+                return pct, f"disponibilidade: {dias} noites livres → {pct}% máx"
+        return 20.0, f"disponibilidade: {dias} noites livres → 20% máx"
 
     # tenta mapear os ranges do md
     faixas = [
@@ -210,8 +210,8 @@ def _desconto_disponibilidade(dias: int) -> tuple[float, str]:
     ]
     for limite, pct in faixas:
         if dias <= limite:
-            return pct, f"disponibilidade: {dias} dias livres → {pct}% máx"
-    return 20.0, f"disponibilidade: {dias} dias livres → 20% máx"
+            return pct, f"disponibilidade: {dias} noites livres → {pct}% máx"
+    return 20.0, f"disponibilidade: {dias} noites livres → 20% máx"
 
 
 def _desconto_demanda(score: float) -> tuple[float, str]:
@@ -275,11 +275,11 @@ def _desconto_combinado(dados: DadosImovel, pl: DadosPriceLabs) -> tuple[float, 
         d_disp, _ = _desconto_disponibilidade(dados.dias_disponiveis)
         d_dem, _ = _desconto_demanda(pl.demanda_media)
         pct = max(d_disp, d_dem)
-        return pct, f"combinada: demanda baixa + {dados.dias_disponiveis} dias livres → {pct}%"
+        return pct, f"combinada: demanda baixa + {dados.dias_disponiveis} noites livres → {pct}%"
 
     # demanda alta + muitos dias disponíveis → limita a 5%
     if pl.demanda_media >= 70 and dados.dias_disponiveis > 21:
-        return 5.0, f"combinada: demanda alta mas {dados.dias_disponiveis} dias livres → 5% máx"
+        return 5.0, f"combinada: demanda alta mas {dados.dias_disponiveis} noites livres → 5% máx"
 
     return float("inf"), "combinada: sem regra específica aplicável"
 

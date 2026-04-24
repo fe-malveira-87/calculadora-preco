@@ -121,5 +121,6 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
     resultado["periodo"] = periodo
     resultado["custos"] = custos
     resultado["reservas"] = reservas
+    resultado["diaria_atual"] = body.diaria_atual
 
     return resultado

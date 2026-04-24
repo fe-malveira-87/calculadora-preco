@@ -25,6 +25,29 @@ const label = {
 const fmtDate = (iso) =>
   new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
+const TEMPLATE = `---
+variavel: dias_disponiveis
+tipo: lookup
+prioridade: 5
+ativo: true
+---
+
+# Título da Política
+
+Descreva aqui o objetivo desta política.
+
+| Limite | Desconto máximo |
+|--------|----------------|
+| 7   | 0%  |
+| 14  | 5%  |
+| 21  | 10% |
+| 999 | 20% |
+
+## Observações
+
+- Adicione observações relevantes aqui
+`
+
 export default function Politicas() {
   const { getToken } = useAuth()
 
@@ -41,12 +64,8 @@ export default function Politicas() {
   const [saving, setSaving] = useState(false)
   const [erro, setErro] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
-
-  // nova política
-  const [showNovaForm, setShowNovaForm] = useState(false)
-  const [novoNome, setNovoNome] = useState('')
-  const [novoConteudo, setNovoConteudo] = useState('')
-  const [savingNova, setSavingNova] = useState(false)
+  const [novoNomeSlug, setNovoNomeSlug] = useState('')
+  const [slugErro, setSlugErro] = useState(null)
 
   const canEdit = role === 'admin' || role === 'aprovador'
   const isDirty = content !== savedContent
@@ -87,8 +106,20 @@ export default function Politicas() {
     }
   }
 
+  function handleNova() {
+    setSelected({ nome: '', titulo: 'Nova Política', isNew: true, arquivada: false, modificado: new Date().toISOString() })
+    setContent(TEMPLATE)
+    setSavedContent('')
+    setNovoNomeSlug('')
+    setSlugErro(null)
+    setErro(null)
+    setSuccessMsg(null)
+    setShowHistory(false)
+    setHistory([])
+  }
+
   async function handleSave() {
-    if (!selected || !canEdit || !isDirty) return
+    if (!selected || !canEdit || !isDirty || selected.isNew) return
     setSaving(true)
     setErro(null)
     try {
@@ -99,6 +130,30 @@ export default function Politicas() {
       fetchList()
     } catch (e) {
       setErro('Erro ao salvar: ' + e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleSalvarNova() {
+    const slug = novoNomeSlug.trim().toLowerCase()
+    if (!slug) { setSlugErro('Nome obrigatório'); return }
+    if (!/^[a-z0-9-]+$/.test(slug)) { setSlugErro('Apenas letras minúsculas, números e hífens'); return }
+    setSlugErro(null)
+    setSaving(true)
+    setErro(null)
+    try {
+      await criarRule(slug, content, getToken)
+      setSuccessMsg('Política criada com sucesso!')
+      setTimeout(() => setSuccessMsg(null), 3000)
+      const newRules = await getRules(getToken)
+      setRules(newRules)
+      const newRule = newRules.find((r) => r.nome === slug)
+      setSelected(newRule ?? { nome: slug, titulo: slug, arquivada: false, modificado: new Date().toISOString() })
+      setSavedContent(content)
+      setNovoNomeSlug('')
+    } catch (e) {
+      setErro('Erro ao criar: ' + e.message)
     } finally {
       setSaving(false)
     }
@@ -117,26 +172,6 @@ export default function Politicas() {
       } finally {
         setLoadingHistory(false)
       }
-    }
-  }
-
-  async function handleCriar(e) {
-    e.preventDefault()
-    if (!novoNome.trim() || !novoConteudo.trim()) return
-    setSavingNova(true)
-    setErro(null)
-    try {
-      await criarRule(novoNome.trim(), novoConteudo.trim(), getToken)
-      setNovoNome('')
-      setNovoConteudo('')
-      setShowNovaForm(false)
-      setSuccessMsg('Política criada com sucesso!')
-      setTimeout(() => setSuccessMsg(null), 3000)
-      fetchList()
-    } catch (e) {
-      setErro('Erro ao criar: ' + e.message)
-    } finally {
-      setSavingNova(false)
     }
   }
 
@@ -189,83 +224,50 @@ export default function Politicas() {
             </p>
             {canEdit && (
               <button
-                onClick={() => { setShowNovaForm((v) => !v); setErro(null) }}
+                onClick={handleNova}
                 style={{
-                  background: showNovaForm ? 'var(--wecare-gray)' : 'var(--wecare-red)',
+                  background: 'var(--wecare-red)',
                   color: '#fff', border: 'none', borderRadius: 'var(--radius)',
                   padding: '0.25rem 0.75rem', fontSize: '0.78em', fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'var(--font-main)',
                 }}
               >
-                {showNovaForm ? 'Cancelar' : '+ Nova'}
+                + Nova
               </button>
             )}
           </div>
 
-          {/* Form nova política */}
-          {showNovaForm && canEdit && (
-            <form
-              onSubmit={handleCriar}
-              style={{
-                background: '#f9f9f9', borderRadius: 'var(--radius)',
-                border: '1px solid #e5e7eb', padding: '0.9rem',
-                display: 'flex', flexDirection: 'column', gap: '0.6rem',
-              }}
-            >
-              <div>
-                <label style={label}>Nome (slug)</label>
-                <input
-                  type="text"
-                  value={novoNome}
-                  onChange={(e) => setNovoNome(e.target.value)}
-                  placeholder="ex: desconto-longa-estadia"
-                  pattern="[a-zA-Z0-9\-]+"
-                  title="Apenas letras, números e hífens"
-                  required
-                  style={{
-                    width: '100%', padding: '0.4rem 0.6rem',
-                    border: '1px solid #ddd', borderRadius: 'var(--radius)',
-                    fontSize: '0.85em', fontFamily: 'var(--font-main)',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={label}>Conteúdo (Markdown)</label>
-                <textarea
-                  value={novoConteudo}
-                  onChange={(e) => setNovoConteudo(e.target.value)}
-                  rows={5}
-                  placeholder="# Título da política&#10;&#10;Descreva as regras..."
-                  required
-                  style={{
-                    width: '100%', padding: '0.4rem 0.6rem',
-                    border: '1px solid #ddd', borderRadius: 'var(--radius)',
-                    fontSize: '0.82em', fontFamily: 'monospace',
-                    resize: 'vertical', boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={savingNova}
-                style={{
-                  background: savingNova ? 'var(--wecare-gray)' : 'var(--wecare-teal)',
-                  color: '#fff', border: 'none', borderRadius: 'var(--radius)',
-                  padding: '0.4rem', fontSize: '0.85em', fontWeight: 600,
-                  cursor: savingNova ? 'not-allowed' : 'pointer',
-                  fontFamily: 'var(--font-main)',
-                }}
-              >
-                {savingNova ? 'Criando...' : 'Criar política'}
-              </button>
-            </form>
-          )}
-
           {loadingList && <p style={{ color: 'var(--wecare-gray)', fontSize: '0.88em' }}>Carregando...</p>}
 
+          {/* Card temporário para nova política não salva */}
+          {selected?.isNew && (
+            <div style={{
+              padding: '0.9rem 1rem',
+              borderRadius: 'var(--radius)',
+              border: '2px solid #3b82f6',
+              background: '#eff6ff',
+              cursor: 'default',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                <p style={{ fontWeight: 600, fontSize: '0.92em', color: 'var(--wecare-dark)', margin: 0 }}>
+                  Nova Política
+                </p>
+                <span style={{
+                  background: '#3b82f6', color: '#fff',
+                  borderRadius: 8, padding: '1px 7px',
+                  fontSize: '0.68em', fontWeight: 700,
+                }}>
+                  Nova
+                </span>
+              </div>
+              <p style={{ fontSize: '0.74em', color: 'var(--wecare-gray)', margin: 0 }}>
+                Não salva
+              </p>
+            </div>
+          )}
+
           {rules.map((rule) => {
-            const active = selected?.nome === rule.nome
+            const active = selected?.nome === rule.nome && !selected?.isNew
             return (
               <div
                 key={rule.nome}
@@ -346,57 +348,120 @@ export default function Politicas() {
             </div>
           ) : (
             <>
-              {/* Barra de ações */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <h2 style={{ fontSize: '1.2em', fontWeight: 700, color: 'var(--wecare-dark)' }}>
-                  {selected.titulo}
-                </h2>
-
-                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                  {successMsg && (
-                    <span style={{ color: 'var(--wecare-teal)', fontWeight: 600, fontSize: '0.88em' }}>
-                      ✓ {successMsg}
-                    </span>
-                  )}
-
-                  <button
-                    onClick={handleToggleHistory}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--wecare-gray)',
-                      borderRadius: 'var(--radius)',
-                      padding: '0.4rem 1rem',
-                      cursor: 'pointer',
-                      fontSize: '0.85em',
-                      color: 'var(--wecare-gray)',
-                      fontFamily: 'var(--font-main)',
-                    }}
-                  >
-                    {showHistory ? 'Fechar histórico' : 'Ver histórico'}
-                  </button>
-
-                  {canEdit && (
+              {/* Barra de ações — nova política */}
+              {selected.isNew ? (
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <h2 style={{ fontSize: '1.2em', fontWeight: 700, color: 'var(--wecare-dark)', margin: 0 }}>
+                      Nova Política
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="text"
+                        value={novoNomeSlug}
+                        onChange={(e) => { setNovoNomeSlug(e.target.value.toLowerCase()); setSlugErro(null) }}
+                        placeholder="ex: desconto-feriados"
+                        style={{
+                          padding: '0.35rem 0.65rem',
+                          border: `1px solid ${slugErro ? 'var(--wecare-red)' : '#ddd'}`,
+                          borderRadius: 'var(--radius)',
+                          fontSize: '0.88em',
+                          fontFamily: 'monospace',
+                          width: 220,
+                        }}
+                      />
+                      {slugErro && (
+                        <span style={{ color: 'var(--wecare-red)', fontSize: '0.8em', fontWeight: 600 }}>
+                          {slugErro}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                    {successMsg && (
+                      <span style={{ color: 'var(--wecare-teal)', fontWeight: 600, fontSize: '0.88em' }}>
+                        ✓ {successMsg}
+                      </span>
+                    )}
                     <button
-                      onClick={handleSave}
-                      disabled={saving || !isDirty}
+                      onClick={() => { setSelected(null); setContent(''); setSavedContent(''); setNovoNomeSlug(''); setSlugErro(null) }}
                       style={{
-                        background: saving || !isDirty ? 'var(--wecare-gray)' : 'var(--wecare-red)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 'var(--radius)',
-                        padding: '0.45rem 1.25rem',
-                        cursor: saving || !isDirty ? 'not-allowed' : 'pointer',
+                        background: 'none', border: '1px solid var(--wecare-gray)',
+                        borderRadius: 'var(--radius)', padding: '0.4rem 1rem',
+                        cursor: 'pointer', fontSize: '0.85em', color: 'var(--wecare-gray)',
                         fontFamily: 'var(--font-main)',
-                        fontWeight: 600,
-                        fontSize: '0.9em',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSalvarNova}
+                      disabled={saving}
+                      style={{
+                        background: saving ? 'var(--wecare-gray)' : 'var(--wecare-red)',
+                        color: '#fff', border: 'none', borderRadius: 'var(--radius)',
+                        padding: '0.45rem 1.25rem', cursor: saving ? 'not-allowed' : 'pointer',
+                        fontFamily: 'var(--font-main)', fontWeight: 600, fontSize: '0.9em',
                         transition: 'background 0.2s',
                       }}
                     >
                       {saving ? 'Salvando...' : 'Salvar'}
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Barra de ações — política existente */
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <h2 style={{ fontSize: '1.2em', fontWeight: 700, color: 'var(--wecare-dark)' }}>
+                    {selected.titulo}
+                  </h2>
+
+                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                    {successMsg && (
+                      <span style={{ color: 'var(--wecare-teal)', fontWeight: 600, fontSize: '0.88em' }}>
+                        ✓ {successMsg}
+                      </span>
+                    )}
+
+                    <button
+                      onClick={handleToggleHistory}
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--wecare-gray)',
+                        borderRadius: 'var(--radius)',
+                        padding: '0.4rem 1rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85em',
+                        color: 'var(--wecare-gray)',
+                        fontFamily: 'var(--font-main)',
+                      }}
+                    >
+                      {showHistory ? 'Fechar histórico' : 'Ver histórico'}
+                    </button>
+
+                    {canEdit && (
+                      <button
+                        onClick={handleSave}
+                        disabled={saving || !isDirty}
+                        style={{
+                          background: saving || !isDirty ? 'var(--wecare-gray)' : 'var(--wecare-red)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 'var(--radius)',
+                          padding: '0.45rem 1.25rem',
+                          cursor: saving || !isDirty ? 'not-allowed' : 'pointer',
+                          fontFamily: 'var(--font-main)',
+                          fontWeight: 600,
+                          fontSize: '0.9em',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        {saving ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Alerta de erro */}
               {erro && (
@@ -409,8 +474,8 @@ export default function Politicas() {
                 </div>
               )}
 
-              {/* Histórico */}
-              {showHistory && (
+              {/* Histórico — só para políticas existentes */}
+              {!selected.isNew && showHistory && (
                 <div style={{
                   background: '#fff', borderRadius: 'var(--radius)',
                   boxShadow: 'var(--shadow)', padding: '1rem 1.5rem',
@@ -441,7 +506,7 @@ export default function Politicas() {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', flex: 1 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <p style={label}>Editor {!canEdit && '(somente leitura)'}</p>
+                    <p style={label}>Editor {!canEdit && !selected.isNew && '(somente leitura)'}</p>
                     <textarea
                       value={content}
                       onChange={(e) => setContent(e.target.value)}

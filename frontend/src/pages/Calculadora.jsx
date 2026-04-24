@@ -199,15 +199,15 @@ export default function Calculadora() {
                 <section>
                   <SectionTitle>Ocupação do período</SectionTitle>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
-                    <SmallCard title="Total de dias" value={resultado.periodo.total_dias} />
+                    <SmallCard title="Total de noites" value={resultado.periodo.total_noites} />
                     <SmallCard
-                      title="Dias livres"
-                      value={resultado.periodo.dias_livres}
+                      title="Noites livres"
+                      value={resultado.periodo.noites_livres}
                       color="var(--wecare-teal)"
                     />
                     <SmallCard
-                      title="Dias ocupados"
-                      value={resultado.periodo.dias_ocupados}
+                      title="Noites ocupadas"
+                      value={resultado.periodo.noites_ocupadas}
                       color="var(--wecare-red)"
                     />
                     <SmallCard

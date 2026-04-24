@@ -56,26 +56,6 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
     except (ValueError, TypeError):
         listing_id_int = None
 
-    periodo = None
-    if listing_id_int:
-        try:
-            hostaway = HostawayClient()
-            calendar = hostaway.get_calendar(listing_id_int, body.data_inicio, body.data_fim)
-            total_dias = len(calendar)
-            dias_livres = sum(
-                1 for d in calendar
-                if d.get("status") == "available" and d.get("isAvailable") == 1
-            )
-            dias_ocupados = total_dias - dias_livres
-            periodo = {
-                "total_dias": total_dias,
-                "dias_livres": dias_livres,
-                "dias_ocupados": dias_ocupados,
-                "taxa_ocupacao": round(dias_ocupados / total_dias * 100, 1) if total_dias else 0.0,
-            }
-        except Exception:
-            pass
-
     custos = None
     if listing_id_int:
         try:
@@ -115,6 +95,26 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
                 ],
                 key=lambda r: r["check_in"] or "",
             )
+        except Exception:
+            pass
+
+    periodo = None
+    if listing_id_int:
+        try:
+            hostaway = HostawayClient()
+            calendar = hostaway.get_calendar(listing_id_int, body.data_inicio, body.data_fim)
+            total_noites = len(calendar)
+            noites_livres = sum(
+                1 for d in calendar
+                if d.get("status") == "available" and d.get("isAvailable") == 1
+            )
+            noites_ocupadas = sum(r["noites"] for r in reservas) if reservas else 0
+            periodo = {
+                "total_noites": total_noites,
+                "noites_livres": noites_livres,
+                "noites_ocupadas": noites_ocupadas,
+                "taxa_ocupacao": round(noites_ocupadas / total_noites * 100, 1) if total_noites else 0.0,
+            }
         except Exception:
             pass
 

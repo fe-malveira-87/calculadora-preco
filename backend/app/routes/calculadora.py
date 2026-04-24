@@ -104,11 +104,8 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
             hostaway = HostawayClient()
             calendar = hostaway.get_calendar(listing_id_int, body.data_inicio, body.data_fim)
             total_noites = len(calendar)
-            noites_livres = sum(
-                1 for d in calendar
-                if d.get("status") == "available" and d.get("isAvailable") == 1
-            )
             noites_ocupadas = sum(r["noites"] for r in reservas) if reservas else 0
+            noites_livres = max(0, total_noites - noites_ocupadas)
             periodo = {
                 "total_noites": total_noites,
                 "noites_livres": noites_livres,

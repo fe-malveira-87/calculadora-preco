@@ -38,23 +38,32 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
         demanda_media=resumo.get("demanda_media", 0.0),
     )
 
+    try:
+        listing_id_int = int(body.listing_id)
+    except (ValueError, TypeError):
+        listing_id_int = None
+
+    noites_livres_real = body.dias_disponiveis
+    _calendar_cache = None
+    if listing_id_int:
+        try:
+            _calendar_cache = HostawayClient().get_calendar(listing_id_int, body.data_inicio, body.data_fim)
+            noites_livres_real = sum(1 for d in _calendar_cache if d.get("isAvailable") == 1)
+        except Exception:
+            _calendar_cache = None
+
     dados = DadosImovel(
         listing_id=body.listing_id,
         nome=body.nome,
         diaria_atual=body.diaria_atual,
         cleaning_fee=body.taxa_limpeza,
         channel_fee_percent=body.comissao_canal,
-        dias_disponiveis=body.dias_disponiveis,
+        dias_disponiveis=noites_livres_real,
         repasse_proprietario=body.diaria_atual,
         repasse_minimo=body.repasse_minimo,
     )
 
     resultado = dataclasses.asdict(CalculadoraDesconto().calcular(dados, dados_pl))
-
-    try:
-        listing_id_int = int(body.listing_id)
-    except (ValueError, TypeError):
-        listing_id_int = None
 
     custos = None
     if listing_id_int:
@@ -101,8 +110,7 @@ def calcular(body: CalcularRequest, user: ClerkAuthUser = Depends(get_clerk_user
     periodo = None
     if listing_id_int:
         try:
-            hostaway = HostawayClient()
-            calendar = hostaway.get_calendar(listing_id_int, body.data_inicio, body.data_fim)
+            calendar = _calendar_cache if _calendar_cache is not None else HostawayClient().get_calendar(listing_id_int, body.data_inicio, body.data_fim)
             total_noites = len(calendar)
             noites_ocupadas = sum(r["noites"] for r in reservas) if reservas else 0
             noites_livres = max(0, total_noites - noites_ocupadas)

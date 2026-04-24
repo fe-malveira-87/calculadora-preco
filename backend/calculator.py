@@ -126,11 +126,21 @@ def _load_politicas_genericas() -> list[dict]:
 def _avaliar_politica_generica(politica: dict, valor: float) -> tuple[float, str]:
     """Avalia uma política genérica para um valor. Retorna (desconto%, descrição)."""
     nome = politica["nome"]
+    variavel = politica.get("variavel", "")
+
+    def _desc(limite: float, desconto: float, fallback: bool = False) -> str:
+        sufixo = " (fallback)" if fallback else f" ≤ {limite:.0f}"
+        if variavel == "dias_disponiveis":
+            return f"{nome}: {int(valor)} noites livres{sufixo} → {desconto:.0f}% máx"
+        if variavel == "demanda_score":
+            return f"{nome}: demanda {valor:.0f}%{sufixo} → {desconto:.0f}% máx"
+        return f"{nome}: {valor:.1f}{sufixo} → {desconto:.0f}% máx"
+
     for limite, desconto in politica["tabela"]:
         if valor <= limite:
-            return desconto, f"{nome}: {valor:.1f} ≤ {limite:.0f} → {desconto:.0f}% máx"
+            return desconto, _desc(limite, desconto)
     limite, desconto = politica["tabela"][-1]
-    return desconto, f"{nome}: {valor:.1f} (fallback) → {desconto:.0f}% máx"
+    return desconto, _desc(limite, desconto, fallback=True)
 
 
 # ---------------------------------------------------------------------------

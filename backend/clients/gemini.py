@@ -73,17 +73,19 @@ Todas as regras avaliadas:
 Responda EXATAMENTE neste formato (use markdown):
 
 ## Por que esse desconto?
-[Explique em 2-3 frases usando os números reais. Mencione a regra determinante pelo nome, \
-a taxa de ocupação exata e o que isso significa para o proprietário.]
+Escreva 2-3 frases usando os números reais acima. Mencione a regra determinante pelo nome, \
+a taxa de ocupação exata e o que isso significa para o proprietário.
 
 ## Como foi calculado
-[Mostre a conta: R$ {contexto['diaria_atual']:.2f} × (1 - {contexto['desconto_percentual']}%) = R$ {contexto['preco_sugerido']:.2f}. \
-Explique por que a regra "{contexto['regra_determinante']}" limitou o desconto a {contexto['desconto_percentual']}%.]
+A regra "{contexto['regra_determinante']}" limitou o desconto máximo a {contexto['desconto_percentual']}%.
+Aplicando sobre a diária: R$ {contexto['diaria_atual']:.2f} × {(100 - contexto['desconto_percentual']) / 100:.2f} = R$ {contexto['preco_sugerido']:.2f}.
+A economia por noite é de R$ {economia:.2f}.
+Escreva 1-2 frases explicando por que essa regra foi a determinante entre todas avaliadas.
 
 ## Recomendação
-[Com base na taxa de ocupação de {periodo.get('taxa_ocupacao', 'N/A')}% e no histórico, \
-dê UMA recomendação concreta e acionável. Se a ocupação está baixa, sugira ação específica. \
-Se o repasse mínimo está restringindo, comente. Se tudo está adequado, diga por quê.]
+Com base na taxa de ocupação de {periodo.get('taxa_ocupacao', 'N/A')}% e no histórico acima, \
+escreva UMA recomendação concreta e acionável. Se a ocupação está baixa, sugira uma ação específica. \
+Se o repasse mínimo está restringindo o desconto, comente sobre isso. Se tudo está adequado, explique por quê.
 """
 
         payload = {

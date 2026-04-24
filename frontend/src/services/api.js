@@ -103,6 +103,15 @@ export async function desarquivarRule(nome, getToken) {
   return res.json()
 }
 
+export async function deletarRule(nome, getToken) {
+  const res = await fetch(`${API_BASE}/rules/${nome}`, {
+    method: 'DELETE',
+    headers: await authHeaders(getToken),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
 export async function getRuleHistory(nome, getToken) {
   const res = await fetch(`${API_BASE}/rules/${nome}/history`, {
     headers: await authHeaders(getToken),

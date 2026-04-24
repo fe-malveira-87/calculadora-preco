@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import {
   arquivarRule,
   criarRule,
+  deletarRule,
   desarquivarRule,
   getMe,
   getRule,
@@ -188,6 +189,20 @@ export default function Politicas() {
     }
   }
 
+  async function handleDeletar(nome) {
+    if (!window.confirm('Tem certeza? Esta ação não pode ser desfeita.')) return
+    setErro(null)
+    try {
+      await deletarRule(nome, getToken)
+      if (selected?.nome === nome) { setSelected(null); setContent(''); setSavedContent('') }
+      setSuccessMsg('Política excluída.')
+      setTimeout(() => setSuccessMsg(null), 3000)
+      fetchList()
+    } catch (e) {
+      setErro('Erro ao excluir: ' + e.message)
+    }
+  }
+
   async function handleDesarquivar(nome) {
     setErro(null)
     try {
@@ -304,26 +319,45 @@ export default function Politicas() {
                   </div>
 
                   {canEdit && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        rule.arquivada ? handleDesarquivar(rule.nome) : handleArquivar(rule.nome)
-                      }}
-                      style={{
-                        background: 'none',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 'var(--radius)',
-                        padding: '2px 8px',
-                        fontSize: '0.72em',
-                        cursor: 'pointer',
-                        color: 'var(--wecare-gray)',
-                        fontFamily: 'var(--font-main)',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {rule.arquivada ? 'Restaurar' : 'Arquivar'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          rule.arquivada ? handleDesarquivar(rule.nome) : handleArquivar(rule.nome)
+                        }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #d1d5db',
+                          borderRadius: 'var(--radius)',
+                          padding: '2px 8px',
+                          fontSize: '0.72em',
+                          cursor: 'pointer',
+                          color: 'var(--wecare-gray)',
+                          fontFamily: 'var(--font-main)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {rule.arquivada ? 'Restaurar' : 'Arquivar'}
+                      </button>
+                      {rule.arquivada && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeletar(rule.nome) }}
+                          style={{
+                            background: 'none',
+                            border: '1px solid var(--wecare-red)',
+                            borderRadius: 'var(--radius)',
+                            padding: '2px 8px',
+                            fontSize: '0.72em',
+                            cursor: 'pointer',
+                            color: 'var(--wecare-red)',
+                            fontFamily: 'var(--font-main)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

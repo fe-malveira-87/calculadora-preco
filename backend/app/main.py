@@ -16,6 +16,7 @@ from app.routes.aprovacoes import router as aprovacoes_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.aprovacao import router as aprovacao_router
 from app.routes.calculadora import router as calculadora_router
+from app.routes.ia import router as ia_router
 from app.routes.listings import router as listings_router
 from app.routes.rules import router as rules_router
 
@@ -37,6 +38,7 @@ app.include_router(rules_router)
 app.include_router(aprovacoes_router)
 app.include_router(aprovacao_router)
 app.include_router(dashboard_router)
+app.include_router(ia_router)
 
 
 @app.get("/health")

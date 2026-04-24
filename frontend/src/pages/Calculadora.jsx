@@ -4,7 +4,7 @@ import Header from '../components/Header'
 import MetricCard from '../components/MetricCard'
 import Sidebar from '../components/Sidebar'
 import { useCalculadora } from '../hooks/useCalculadora'
-import { getMe, solicitarAprovacao } from '../services/api'
+import { analisarIA, getMe, solicitarAprovacao } from '../services/api'
 
 const fmt = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
 const fmtDate = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR') : '-')
@@ -62,6 +62,10 @@ export default function Calculadora() {
   const [solicitacaoId, setSolicitacaoId] = useState(null)
   const [enviando, setEnviando] = useState(false)
   const [erroSolicitar, setErroSolicitar] = useState(null)
+  const [lastPayload, setLastPayload] = useState(null)
+  const [iaAnalise, setIaAnalise] = useState(null)
+  const [iaLoading, setIaLoading] = useState(false)
+  const [iaErro, setIaErro] = useState(null)
 
   useEffect(() => {
     fetchListings()
@@ -71,6 +75,9 @@ export default function Calculadora() {
   async function handleCalcular(payload) {
     setSolicitacaoId(null)
     setErroSolicitar(null)
+    setIaAnalise(null)
+    setIaErro(null)
+    setLastPayload(payload)
 
     if (role === 'atendente') {
       setEnviando(true)
@@ -84,6 +91,39 @@ export default function Calculadora() {
       }
     } else {
       calcular(payload)
+    }
+  }
+
+  async function handleAnalisarIA() {
+    if (!resultado || !lastPayload) return
+    setIaLoading(true)
+    setIaErro(null)
+    setIaAnalise(null)
+    try {
+      const payload = {
+        nome_imovel: lastPayload.nome || '',
+        data_inicio: lastPayload.data_inicio || '',
+        data_fim: lastPayload.data_fim || '',
+        diaria_atual: resultado.diaria_atual ?? lastPayload.diaria_atual ?? 0,
+        desconto_percentual: resultado.desconto_percentual ?? 0,
+        preco_sugerido: resultado.preco_sugerido ?? 0,
+        repasse_minimo: lastPayload.repasse_minimo ?? 0,
+        repasse_resultante: resultado.repasse_resultante ?? 0,
+        regra_determinante: resultado.regra_determinante ?? '',
+        regras_aplicadas: resultado.regras_aplicadas ?? [],
+        periodo: resultado.periodo ?? null,
+        listing_id: lastPayload.listing_id ?? '',
+      }
+      const data = await analisarIA(payload, getToken)
+      if (data.analise) {
+        setIaAnalise(data.analise)
+      } else {
+        setIaErro(data.erro || 'Erro desconhecido ao consultar IA')
+      }
+    } catch (e) {
+      setIaErro(e.message || 'Erro ao conectar com IA')
+    } finally {
+      setIaLoading(false)
     }
   }
 
@@ -329,6 +369,74 @@ export default function Calculadora() {
                       )
                     })}
                   </div>
+                </section>
+              )}
+
+              {/* 6. Análise IA */}
+              {resultado && (
+                <section>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    <SectionTitle>Análise com IA</SectionTitle>
+                  </div>
+                  {!iaAnalise && (
+                    <button
+                      onClick={handleAnalisarIA}
+                      disabled={iaLoading}
+                      style={{
+                        background: iaLoading ? 'var(--wecare-gray)' : 'var(--wecare-teal)',
+                        color: '#fff', border: 'none', borderRadius: 'var(--radius)',
+                        padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.9em',
+                        cursor: iaLoading ? 'not-allowed' : 'pointer', display: 'flex',
+                        alignItems: 'center', gap: '0.4rem',
+                      }}
+                    >
+                      {iaLoading ? 'Consultando IA...' : '✨ Analisar com IA'}
+                    </button>
+                  )}
+                  {iaErro && (
+                    <div style={{
+                      background: '#fff3cd', border: '1px solid var(--wecare-yellow)',
+                      borderRadius: 'var(--radius)', padding: '0.75rem 1rem',
+                      color: '#856404', fontSize: '0.88em', marginTop: '0.5rem',
+                    }}>
+                      {iaErro}
+                    </div>
+                  )}
+                  {iaAnalise && (
+                    <div style={{
+                      background: '#f0fdfa', border: '1px solid var(--wecare-teal)',
+                      borderRadius: 'var(--radius)', padding: '1rem 1.25rem',
+                      marginTop: '0.5rem',
+                    }}>
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', marginBottom: '0.75rem',
+                      }}>
+                        <span style={{ fontWeight: 700, color: 'var(--wecare-teal)', fontSize: '0.85em' }}>
+                          ✨ Análise da IA
+                        </span>
+                        <button
+                          onClick={handleAnalisarIA}
+                          disabled={iaLoading}
+                          style={{
+                            background: 'transparent', border: '1px solid var(--wecare-teal)',
+                            borderRadius: 6, padding: '2px 10px', fontSize: '0.75em',
+                            color: 'var(--wecare-teal)', cursor: 'pointer', fontWeight: 600,
+                          }}
+                        >
+                          {iaLoading ? '...' : 'Regenerar'}
+                        </button>
+                      </div>
+                      <div
+                        style={{ fontSize: '0.9em', color: 'var(--wecare-dark)', lineHeight: 1.65 }}
+                        dangerouslySetInnerHTML={{
+                          __html: typeof window !== 'undefined' && window.marked
+                            ? window.marked.parse(iaAnalise)
+                            : iaAnalise.replace(/\n/g, '<br/>')
+                        }}
+                      />
+                    </div>
+                  )}
                 </section>
               )}
 

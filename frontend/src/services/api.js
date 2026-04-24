@@ -263,3 +263,13 @@ export function exportExcel(getToken) {
 export function exportPdf(getToken) {
   return _downloadBlob(getToken, '/dashboard/export/pdf', 'aprovacoes.pdf')
 }
+
+export async function analisarIA(payload, getToken) {
+  const res = await fetch(`${API_BASE}/ia/analisar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders(getToken)) },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}

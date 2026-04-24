@@ -37,37 +37,54 @@ class GeminiClient:
         historico = contexto.get("historico_resumo") or "Sem histórico disponível"
         periodo = contexto.get("periodo") or {}
 
-        prompt = f"""Você é um consultor especialista em precificação de imóveis de temporada da WeCare Hosting.
+        total_noites = periodo.get("total_noites") or 1
+        noites_livres = periodo.get("noites_livres", 0)
+        pct_livres = round((noites_livres / total_noites) * 100, 1) if periodo.get("total_noites") else "N/A"
+        economia = contexto["diaria_atual"] - contexto["preco_sugerido"]
 
-Analise os dados abaixo e retorne uma explicação clara e profissional em português:
+        prompt = f"""Você é um consultor sênior de revenue management da WeCare Hosting.
 
-IMÓVEL: {contexto['nome_imovel']}
-PERÍODO: {contexto['data_inicio']} a {contexto['data_fim']}
-DIÁRIA ATUAL: R$ {contexto['diaria_atual']:.2f}
-DESCONTO SUGERIDO: {contexto['desconto_percentual']}%
-PREÇO SUGERIDO: R$ {contexto['preco_sugerido']:.2f}
-REPASSE MÍNIMO: R$ {contexto['repasse_minimo']:.2f}
-REPASSE RESULTANTE: R$ {contexto['repasse_resultante']:.2f}
+Analise os dados REAIS abaixo e gere uma análise ESPECÍFICA usando os números fornecidos.
+NÃO use frases genéricas. Cite os valores exatos.
 
-OCUPAÇÃO DO PERÍODO:
-- Total de noites: {periodo.get('total_noites', 'N/A')}
-- Noites livres: {periodo.get('noites_livres', 'N/A')}
-- Noites ocupadas: {periodo.get('noites_ocupadas', 'N/A')}
-- Taxa de ocupação: {periodo.get('taxa_ocupacao', 'N/A')}%
+═══ DADOS DO CÁLCULO ═══
+Imóvel: {contexto['nome_imovel']}
+Período: {contexto['data_inicio']} a {contexto['data_fim']}
+Diária atual: R$ {contexto['diaria_atual']:.2f}
+Desconto aplicado: {contexto['desconto_percentual']}%
+Preço sugerido: R$ {contexto['preco_sugerido']:.2f}  (economia de R$ {economia:.2f} por noite)
+Repasse mínimo: R$ {contexto['repasse_minimo']:.2f}
+Repasse após desconto: R$ {contexto['repasse_resultante']:.2f}
 
-REGRA QUE DETERMINOU O DESCONTO: {contexto['regra_determinante']}
-TODAS AS REGRAS APLICADAS:
-{chr(10).join(f"- {r}" for r in contexto['regras_aplicadas'])}
+═══ OCUPAÇÃO ═══
+Noites no período: {periodo.get('total_noites', 'N/A')}
+Noites livres: {periodo.get('noites_livres', 'N/A')} ({pct_livres}% do período)
+Noites ocupadas: {periodo.get('noites_ocupadas', 'N/A')}
+Taxa de ocupação: {periodo.get('taxa_ocupacao', 'N/A')}%
 
-HISTÓRICO RECENTE DE APROVAÇÕES (últimas aprovadas):
+═══ REGRAS ═══
+Regra que limitou o desconto: {contexto['regra_determinante']}
+Todas as regras avaliadas:
+{chr(10).join(f"  • {r}" for r in contexto['regras_aplicadas'])}
+
+═══ HISTÓRICO DE APROVAÇÕES ═══
 {historico}
 
-Estruture sua resposta em 3 partes curtas:
-1. **Por que esse desconto foi sugerido** (2-3 frases explicando a lógica)
-2. **O cálculo aplicado** (mostre como chegou ao preço sugerido)
-3. **Sugestão de melhoria** (se houver insights com base nos dados e histórico, sugira ajuste de política ou ação — caso contrário, confirme que a política está adequada)
+Responda EXATAMENTE neste formato (use markdown):
 
-Seja direto, objetivo e use linguagem adequada para gestores de hospedagem."""
+## Por que esse desconto?
+[Explique em 2-3 frases usando os números reais. Mencione a regra determinante pelo nome, \
+a taxa de ocupação exata e o que isso significa para o proprietário.]
+
+## Como foi calculado
+[Mostre a conta: R$ {contexto['diaria_atual']:.2f} × (1 - {contexto['desconto_percentual']}%) = R$ {contexto['preco_sugerido']:.2f}. \
+Explique por que a regra "{contexto['regra_determinante']}" limitou o desconto a {contexto['desconto_percentual']}%.]
+
+## Recomendação
+[Com base na taxa de ocupação de {periodo.get('taxa_ocupacao', 'N/A')}% e no histórico, \
+dê UMA recomendação concreta e acionável. Se a ocupação está baixa, sugira ação específica. \
+Se o repasse mínimo está restringindo, comente. Se tudo está adequado, diga por quê.]
+"""
 
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],

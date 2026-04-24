@@ -2,7 +2,7 @@
 variavel: diaria_atual
 tipo: lookup
 prioridade: 2
-ativo: true
+ativo: false
 ---
 
 # Política de Temporada

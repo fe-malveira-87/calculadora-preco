@@ -1,15 +1,21 @@
+---
+variavel: demanda_score
+tipo: lookup
+prioridade: 3
+ativo: true
+---
+
 # Regras de Demanda (PriceLabs)
 
 Descontos baseados no índice de demanda de busca para o imóvel/região.
+Limites em ordem crescente; o primeiro `limite >= score` determina o desconto.
 
-## Regras
-
-| Nível de demanda | Desconto máximo permitido |
-|-----------------|--------------------------|
-| Alta (>70%) | 0% (sem desconto) |
-| Média (40% a 70%) | 5% |
-| Baixa (20% a 39%) | 10% |
-| Muito baixa (<20%) | 15% |
+| Score máximo de demanda | Desconto máximo |
+|-------------------------|-----------------|
+| 20  | 15% |
+| 39  | 10% |
+| 70  | 5%  |
+| 100 | 0%  |
 
 ## Observações
 

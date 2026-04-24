@@ -12,4 +12,5 @@ dependencies = [
     "filelock>=3.13.0",
     "openpyxl>=3.1.0",
     "reportlab>=4.2.0",
+    "pyyaml>=6.0",
 ]

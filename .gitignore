@@ -26,3 +26,5 @@ backend/__pycache__/
 .vscode/
 .idea/
 *.swp
+service_account.json
+service_account.json

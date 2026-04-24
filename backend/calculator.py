@@ -3,9 +3,12 @@ Lê as regras dos arquivos .md em /rules e calcula o desconto final.
 Para alterar regras, edite os arquivos markdown — não é necessário mexer aqui.
 """
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import yaml
 
 RULES_DIR = Path(__file__).parent / "rules"
 
@@ -45,7 +48,93 @@ class ResultadoDesconto:
 
 
 # ---------------------------------------------------------------------------
-# Parser de tabelas markdown
+# Engine genérico de políticas
+# ---------------------------------------------------------------------------
+
+def _parse_frontmatter(texto: str) -> tuple[dict, str]:
+    """Extrai frontmatter YAML do topo do arquivo markdown. Retorna (meta, corpo)."""
+    if not texto.startswith("---"):
+        return {}, texto
+    partes = texto.split("---", 2)
+    if len(partes) < 3:
+        return {}, texto
+    try:
+        meta = yaml.safe_load(partes[1]) or {}
+    except yaml.YAMLError:
+        return {}, texto
+    return meta, partes[2]
+
+
+def _parse_tabela_generica(texto: str) -> list[tuple[float, float]]:
+    """
+    Lê tabela markdown com primeira coluna numérica (limite) e segunda coluna
+    percentual (desconto). Retorna lista de (limite, desconto) ordenada por limite.
+    """
+    tabela = []
+    for linha in texto.splitlines():
+        if "|" not in linha:
+            continue
+        cols = [c.strip() for c in linha.strip().strip("|").split("|")]
+        if len(cols) < 2:
+            continue
+        try:
+            limite = float(cols[0])
+            desconto = float(cols[1].replace("%", "").strip())
+            tabela.append((limite, desconto))
+        except ValueError:
+            continue
+    return sorted(tabela, key=lambda x: x[0])
+
+
+def _load_politicas_genericas() -> list[dict]:
+    """
+    Carrega todas as políticas genéricas em RULES_DIR.
+    Ignora repasse.md, combinadas.md, arquivos sem frontmatter e ativo: false.
+    """
+    IGNORAR = {"repasse.md", "combinadas.md"}
+    politicas = []
+
+    for path in RULES_DIR.glob("*.md"):
+        if path.name in IGNORAR:
+            continue
+        texto = path.read_text(encoding="utf-8")
+        if not texto.startswith("---"):
+            continue
+        try:
+            meta, corpo = _parse_frontmatter(texto)
+        except Exception:
+            logging.warning("Política %s: frontmatter inválido, ignorado", path.name)
+            continue
+        if not meta or not meta.get("ativo", True):
+            continue
+        variavel = meta.get("variavel")
+        if not variavel:
+            continue
+        tabela = _parse_tabela_generica(corpo)
+        if not tabela:
+            continue
+        politicas.append({
+            "nome": path.stem,
+            "variavel": variavel,
+            "prioridade": int(meta.get("prioridade", 0)),
+            "tabela": tabela,
+        })
+
+    return politicas
+
+
+def _avaliar_politica_generica(politica: dict, valor: float) -> tuple[float, str]:
+    """Avalia uma política genérica para um valor. Retorna (desconto%, descrição)."""
+    nome = politica["nome"]
+    for limite, desconto in politica["tabela"]:
+        if valor <= limite:
+            return desconto, f"{nome}: {valor:.1f} ≤ {limite:.0f} → {desconto:.0f}% máx"
+    limite, desconto = politica["tabela"][-1]
+    return desconto, f"{nome}: {valor:.1f} (fallback) → {desconto:.0f}% máx"
+
+
+# ---------------------------------------------------------------------------
+# Parser de tabelas markdown (legado — mantido para fallback)
 # ---------------------------------------------------------------------------
 
 def _parse_tabela_md(arquivo: str) -> list[tuple[str, float]]:
@@ -203,23 +292,38 @@ class CalculadoraDesconto:
         pct_combinada, desc_combinada = _desconto_combinado(dados, pl)
         regras_aplicadas.append(f"[combinada] {desc_combinada}")
 
-        # 3. Demanda
-        pct_demanda, desc_demanda = _desconto_demanda(pl.demanda_media)
-        regras_aplicadas.append(f"[demanda] {desc_demanda}")
-
-        # 4. Disponibilidade
-        pct_disp, desc_disp = _desconto_disponibilidade(dados.dias_disponiveis)
-        regras_aplicadas.append(f"[disponibilidade] {desc_disp}")
-
-        # desconto final = menor entre todas as regras (mais conservador)
         candidatos_nomeados = [
             (pct_repasse, "repasse"),
             (pct_combinada, "combinada"),
-            (pct_demanda, "demanda"),
-            (pct_disp, "disponibilidade"),
         ]
-        candidatos = [pct_repasse, pct_combinada, pct_demanda, pct_disp]
-        desconto_final = min(c for c in candidatos if c != float("inf"))
+
+        # 3+. Políticas genéricas via engine; fallback hardcoded se engine vazio
+        variavel_map = {
+            "dias_disponiveis": dados.dias_disponiveis,
+            "demanda_score": pl.demanda_media,
+            "diaria_atual": dados.diaria_atual,
+            "repasse_minimo": dados.repasse_minimo,
+        }
+        politicas = _load_politicas_genericas()
+        if politicas:
+            for politica in sorted(politicas, key=lambda p: p["prioridade"], reverse=True):
+                valor = variavel_map.get(politica["variavel"])
+                if valor is None:
+                    continue
+                pct, desc = _avaliar_politica_generica(politica, valor)
+                regras_aplicadas.append(f"[{politica['nome']}] {desc}")
+                candidatos_nomeados.append((pct, politica["nome"]))
+        else:
+            pct_demanda, desc_demanda = _desconto_demanda(pl.demanda_media)
+            regras_aplicadas.append(f"[demanda] {desc_demanda}")
+            candidatos_nomeados.append((pct_demanda, "demanda"))
+
+            pct_disp, desc_disp = _desconto_disponibilidade(dados.dias_disponiveis)
+            regras_aplicadas.append(f"[disponibilidade] {desc_disp}")
+            candidatos_nomeados.append((pct_disp, "disponibilidade"))
+
+        # desconto final = menor entre todas as regras (mais conservador)
+        desconto_final = min(c[0] for c in candidatos_nomeados if c[0] != float("inf"))
         regra_vencedora = min(
             (c for c in candidatos_nomeados if c[0] != float("inf")),
             key=lambda c: c[0],

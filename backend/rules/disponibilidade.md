@@ -1,16 +1,21 @@
+---
+variavel: dias_disponiveis
+tipo: lookup
+prioridade: 4
+ativo: true
+---
+
 # Regras de Disponibilidade
 
 Descontos baseados em quantos dias o imóvel está disponível sem reserva no período analisado.
 
-## Regras
-
-| Dias disponíveis sem reserva | Desconto máximo permitido |
-|------------------------------|--------------------------|
-| 0 a 7 dias | 0% (sem desconto) |
-| 8 a 14 dias | 5% |
-| 15 a 21 dias | 10% |
-| 22 a 30 dias | 15% |
-| Mais de 30 dias | 20% |
+| Limite de noites livres | Desconto máximo |
+|-------------------------|-----------------|
+| 7   | 0%  |
+| 14  | 5%  |
+| 21  | 10% |
+| 30  | 15% |
+| 999 | 20% |
 
 ## Observações
 
